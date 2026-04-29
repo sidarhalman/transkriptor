@@ -1,0 +1,15 @@
+node_modules/
+.next/
+.env
+.env.local
+storage/uploads/*
+storage/processed/*
+storage/transcripts/*
+storage/outputs/*
+!storage/uploads/.gitkeep
+!storage/processed/.gitkeep
+!storage/transcripts/.gitkeep
+!storage/outputs/.gitkeep
+whisper/models/*.bin
+*.log
+.DS_Store
