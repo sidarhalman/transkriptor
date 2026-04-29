@@ -21,7 +21,7 @@ export default function Home() {
       <div className="max-w-xl mx-auto flex flex-col gap-8">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-gray-900">Transkriptor</h1>
-          <p className="text-sm text-gray-400 mt-1">Lokal ses transkripsiyon</p>
+          <p className="text-sm text-gray-400 mt-1">Local audio transcription</p>
         </div>
 
         <UploadZone onUpload={handleUpload} />
@@ -29,7 +29,7 @@ export default function Home() {
         {jobs.length > 0 && (
           <div className="flex flex-col gap-3">
             <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wide">
-              İşler ({jobs.length})
+              Jobs ({jobs.length})
             </h2>
             {jobs.map((j) => (
               <JobStatus key={j.jobId} jobId={j.jobId} filename={j.filename} />

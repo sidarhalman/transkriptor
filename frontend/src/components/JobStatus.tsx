@@ -16,10 +16,10 @@ interface Props {
 }
 
 const STATUS_LABEL: Record<Job['status'], string> = {
-  queued: 'Sıraya alındı',
-  processing: 'İşleniyor…',
-  done: 'Tamamlandı',
-  error: 'Hata',
+  queued: 'Queued',
+  processing: 'Processing…',
+  done: 'Done',
+  error: 'Error',
 };
 
 const STATUS_COLOR: Record<Job['status'], string> = {

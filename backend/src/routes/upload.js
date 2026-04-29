@@ -29,7 +29,6 @@ const storage = multer.diskStorage({
 
 const upload = multer({
   storage,
-  limits: { fileSize: 500 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
     const ext = path.extname(file.originalname).toLowerCase();
     if (ALLOWED_MIME.has(file.mimetype) || ALLOWED_EXT.has(ext)) {
@@ -54,9 +53,6 @@ router.post('/', upload.single('audio'), (req, res) => {
 
 router.use((err, _req, res, _next) => {
   console.error(`upload error: ${err.message}`);
-  if (err.code === 'LIMIT_FILE_SIZE') {
-    return res.status(413).json({ error: 'file too large (max 500MB)' });
-  }
   res.status(400).json({ error: err.message });
 });
 

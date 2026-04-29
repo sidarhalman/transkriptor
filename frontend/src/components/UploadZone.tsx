@@ -25,7 +25,7 @@ export default function UploadZone({ onUpload }: Props) {
     setDragging(false);
     const file = e.dataTransfer.files[0];
     if (!file) return;
-    if (!validFile(file)) { setError(`Desteklenmeyen format: ${file.name}`); return; }
+    if (!validFile(file)) { setError(`Unsupported format: ${file.name}`); return; }
     setError('');
     setSelected(file);
   }
@@ -33,7 +33,7 @@ export default function UploadZone({ onUpload }: Props) {
   function handleChange(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (!validFile(file)) { setError(`Desteklenmeyen format: ${file.name}`); return; }
+    if (!validFile(file)) { setError(`Unsupported format: ${file.name}`); return; }
     setError('');
     setSelected(file);
   }
@@ -48,14 +48,14 @@ export default function UploadZone({ onUpload }: Props) {
       const res = await fetch('/api/upload', { method: 'POST', body: form });
       if (!res.ok) {
         const data = await res.json();
-        throw new Error(data.error || 'Upload başarısız');
+        throw new Error(data.error || 'Upload failed');
       }
       const { jobId } = await res.json();
       onUpload(jobId, selected.name);
       setSelected(null);
       if (inputRef.current) inputRef.current.value = '';
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Upload hatası');
+      setError(err instanceof Error ? err.message : 'Upload error');
     } finally {
       setUploading(false);
     }
@@ -82,8 +82,8 @@ export default function UploadZone({ onUpload }: Props) {
           <p className="text-gray-700 font-medium truncate">{selected.name}</p>
         ) : (
           <>
-            <p className="text-gray-500 text-sm">Sürükle & bırak veya tıkla</p>
-            <p className="text-gray-400 text-xs mt-1">mp3 · mp4 · m4a · wav · ogg — maks 500MB</p>
+            <p className="text-gray-500 text-sm">Drag & drop or click to select</p>
+            <p className="text-gray-400 text-xs mt-1">mp3 · mp4 · m4a · wav · ogg</p>
           </>
         )}
       </div>
@@ -97,7 +97,7 @@ export default function UploadZone({ onUpload }: Props) {
           bg-blue-600 text-white hover:bg-blue-700
           disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed"
       >
-        {uploading ? 'Yükleniyor…' : 'Transkripte Et'}
+        {uploading ? 'Uploading…' : 'Transcribe'}
       </button>
     </div>
   );
