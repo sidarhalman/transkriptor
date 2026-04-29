@@ -7,6 +7,8 @@ interface Job {
   status: 'queued' | 'processing' | 'done' | 'error';
   originalName: string;
   text: string | null;
+  cleanedText: string | null;
+  aiCleanup: boolean;
   error: string | null;
 }
 
@@ -60,12 +62,20 @@ export default function JobStatus({ jobId, filename }: Props) {
 
   const status = job?.status ?? 'queued';
   const basename = filename.replace(/\.[^.]+$/, '');
+  const preview = job?.cleanedText || job?.text;
 
   return (
     <div className="bg-white border border-gray-200 rounded-xl p-4 flex flex-col gap-2">
       <div className="flex items-center justify-between gap-2">
-        <p className="text-sm font-medium text-gray-800 truncate">{filename}</p>
-        <span className={`text-xs px-2 py-0.5 rounded-full font-medium whitespace-nowrap ${STATUS_COLOR[status]}`}>
+        <div className="flex items-center gap-2 min-w-0">
+          <p className="text-sm font-medium text-gray-800 truncate">{filename}</p>
+          {job?.cleanedText && (
+            <span className="shrink-0 text-xs px-1.5 py-0.5 rounded bg-purple-100 text-purple-700 font-medium">
+              AI Cleaned
+            </span>
+          )}
+        </div>
+        <span className={`shrink-0 text-xs px-2 py-0.5 rounded-full font-medium whitespace-nowrap ${STATUS_COLOR[status]}`}>
           {status === 'processing' && <Spinner />}
           {STATUS_LABEL[status]}
         </span>
@@ -98,8 +108,8 @@ export default function JobStatus({ jobId, filename }: Props) {
           >
             PDF
           </a>
-          {job?.text && (
-            <p className="w-full text-xs text-gray-500 italic mt-1 line-clamp-2">{job.text}</p>
+          {preview && (
+            <p className="w-full text-xs text-gray-500 italic mt-1 line-clamp-2">{preview}</p>
           )}
         </div>
       )}

@@ -43,7 +43,8 @@ router.post('/', upload.single('audio'), (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'no file uploaded' });
 
   const jobId = path.parse(req.file.filename).name;
-  jobManager.create(jobId, req.file.originalname, req.file.path);
+  const aiCleanup = req.body?.cleanup === 'true';
+  jobManager.create(jobId, req.file.originalname, req.file.path, aiCleanup);
   console.log(`upload ok: ${req.file.filename} (${req.file.size} bytes)`);
 
   res.json({ jobId });

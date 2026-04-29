@@ -21,7 +21,7 @@ async function generateDocx(job) {
     new Paragraph({ text: '' }),
   ];
 
-  const lines = (job.text || '').split('\n').filter(Boolean);
+  const lines = (job.cleanedText || job.text || '').split('\n').filter(Boolean);
   for (const line of lines) {
     paragraphs.push(new Paragraph({ children: [new TextRun(line.trim())] }));
   }
@@ -61,7 +61,7 @@ async function generatePdf(job) {
   page.drawText(job.originalName, { x: margin, y, size: titleSize, font: fontBold });
   y -= titleSize + 20;
 
-  const words = (job.text || '').trim().split(/\s+/);
+  const words = (job.cleanedText || job.text || '').trim().split(/\s+/);
   let line = '';
 
   for (const word of words) {

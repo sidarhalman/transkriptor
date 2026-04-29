@@ -38,13 +38,14 @@ export default function UploadZone({ onUpload }: Props) {
     setSelected(file);
   }
 
-  async function handleUpload() {
+  async function handleUpload(cleanup: boolean) {
     if (!selected || uploading) return;
     setUploading(true);
     setError('');
     try {
       const form = new FormData();
       form.append('audio', selected);
+      form.append('cleanup', String(cleanup));
       const res = await fetch('/api/upload', { method: 'POST', body: form });
       if (!res.ok) {
         const data = await res.json();
@@ -60,6 +61,8 @@ export default function UploadZone({ onUpload }: Props) {
       setUploading(false);
     }
   }
+
+  const disabled = !selected || uploading;
 
   return (
     <div className="w-full max-w-xl mx-auto">
@@ -90,15 +93,26 @@ export default function UploadZone({ onUpload }: Props) {
 
       {error && <p className="text-red-500 text-sm mt-2 text-center">{error}</p>}
 
-      <button
-        onClick={handleUpload}
-        disabled={!selected || uploading}
-        className="mt-3 w-full py-2.5 rounded-lg text-sm font-medium transition-colors
-          bg-blue-600 text-white hover:bg-blue-700
-          disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed"
-      >
-        {uploading ? 'Uploading…' : 'Transcribe'}
-      </button>
+      <div className="mt-3 flex gap-2">
+        <button
+          onClick={() => handleUpload(false)}
+          disabled={disabled}
+          className="flex-1 py-2.5 rounded-lg text-sm font-medium transition-colors
+            bg-blue-600 text-white hover:bg-blue-700
+            disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed"
+        >
+          {uploading ? 'Uploading…' : 'Transcribe'}
+        </button>
+        <button
+          onClick={() => handleUpload(true)}
+          disabled={disabled}
+          className="flex-1 py-2.5 rounded-lg text-sm font-medium transition-colors
+            bg-purple-600 text-white hover:bg-purple-700
+            disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed"
+        >
+          {uploading ? 'Uploading…' : 'Transcribe & AI Cleanup'}
+        </button>
+      </div>
     </div>
   );
 }

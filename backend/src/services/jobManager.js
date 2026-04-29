@@ -1,9 +1,10 @@
 const ffmpeg = require('./ffmpeg');
 const whisper = require('./whisper');
+const { cleanup } = require('./aiCleanup');
 
 const jobs = new Map();
 
-function create(jobId, originalName, uploadPath) {
+function create(jobId, originalName, uploadPath, aiCleanup = false) {
   const job = {
     id: jobId,
     status: 'queued',
@@ -12,6 +13,8 @@ function create(jobId, originalName, uploadPath) {
     processedPath: null,
     transcriptPath: null,
     text: null,
+    aiCleanup,
+    cleanedText: null,
     error: null,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -45,7 +48,16 @@ async function run(jobId) {
     console.log(`job [${jobId}]: whisper start`);
 
     const { text, txtPath } = await whisper.transcribe(processedPath, jobId);
-    update(jobId, { status: 'done', text, transcriptPath: txtPath });
+    update(jobId, { text, transcriptPath: txtPath });
+
+    if (job.aiCleanup) {
+      console.log(`job [${jobId}]: ai cleanup start`);
+      const cleanedText = await cleanup(text);
+      update(jobId, { cleanedText });
+      console.log(`job [${jobId}]: ai cleanup done`);
+    }
+
+    update(jobId, { status: 'done' });
     console.log(`job [${jobId}]: done`);
   } catch (err) {
     update(jobId, { status: 'error', error: err.message });
