@@ -13,12 +13,12 @@ that runs on macOS Apple Silicon (M1/M2/M3).
 
 A user:
 1. Drops an audio file (lecture recording, meeting, etc.) onto the UI
-2. Clicks **Transcribe** (plain) or **Transcribe & AI Cleanup** (OpenAI-enhanced)
+2. Clicks **Transcribe**
 3. Waits a few seconds while the file is processed locally
 4. Downloads the result as `.txt`, `.docx`, or `.pdf`
+5. Optionally copies the ChatGPT cleanup prompt shown on the page and manually pastes transcript into ChatGPT
 
-Nothing leaves the machine except when the optional AI Cleanup feature is used,
-which sends the transcript text to OpenAI for grammar/punctuation correction.
+Nothing leaves the machine. Everything runs locally.
 
 ---
 
@@ -31,7 +31,7 @@ which sends the transcript text to OpenAI for grammar/punctuation correction.
 | Transcription | whisper-cli | 1.8.4 | whisper.cpp homebrew binary, M1 Metal GPU |
 | Whisper model | ggml-base.en.bin | — | 141 MB, English-only |
 | Audio conversion | ffmpeg | 7.x | Homebrew, converts to 16kHz mono WAV |
-| AI Cleanup | OpenAI API | gpt-4o-mini | Optional, requires API key |
+| AI Cleanup | OpenAI API | gpt-4o-mini | Disabled — code preserved in `aiCleanup.js`, not called |
 | DOCX generation | docx | 9.x | npm package |
 | PDF generation | pdf-lib | — | npm package, Helvetica standard fonts |
 | Storage | Local filesystem | — | `storage/` directory, git-ignored |
@@ -149,22 +149,11 @@ GET /api/output/<jobId>/docx  (lazy generation on first request)
   │  streams file to browser
 ```
 
-### AI Cleanup Transcription (`cleanup=true`)
+### AI Cleanup (disabled)
 
-Same as above, with one extra step between whisper and status='done':
-
-```
-  ├─ whisper.transcribe() → { text }
-  ├─ aiCleanup.cleanup(text)
-  │    POST OpenAI /v1/chat/completions  (gpt-4o-mini)
-  │    system prompt: fix grammar/punctuation, keep meaning, return only transcript
-  │    returns: cleanedText string
-  │  job.cleanedText = cleanedText
-  │  status → 'done'
-  ▼
-DOCX/PDF use cleanedText; TXT still serves original whisper output
-JobStatus card shows "AI Cleaned" purple badge
-```
+`aiCleanup.js` contains the full OpenAI cleanup implementation but it is not called.
+The `if (job.aiCleanup)` block in `jobManager.run()` is commented out.
+To re-enable: uncomment the block and the `require('./aiCleanup')` import.
 
 ---
 
@@ -182,8 +171,8 @@ interface Job {
   processedPath: string | null;   // storage/processed/<id>.wav
   transcriptPath: string | null;  // storage/transcripts/<id>.txt
   text: string | null;            // raw whisper output
-  aiCleanup: boolean;             // was AI cleanup requested?
-  cleanedText: string | null;     // OpenAI-corrected transcript (null if not requested)
+  aiCleanup: boolean;             // reserved — cleanup is currently disabled
+  cleanedText: string | null;     // reserved — always null (cleanup disabled)
   error: string | null;           // error message if status='error'
   createdAt: string;              // ISO timestamp
   updatedAt: string;              // ISO timestamp
@@ -198,7 +187,7 @@ interface Job {
 - Content-Type: `multipart/form-data`
 - Fields:
   - `audio` (file) — accepted: `.mp3 .mp4 .m4a .wav .ogg`; no size limit
-  - `cleanup` (string) — `'true'` to enable AI cleanup, anything else = disabled
+  - `cleanup` (string) — accepted but ignored; AI cleanup is currently disabled
 - Response: `{ jobId: string }`
 - Side effect: immediately starts the processing pipeline asynchronously
 
@@ -216,13 +205,13 @@ interface Job {
 ### `GET /api/output/:id/docx`
 - Requires: job status = `'done'`
 - Returns: Word document as `.docx` download
-- Content: `cleanedText` if present, otherwise `text`
+- Content: raw whisper `text`
 - Cached: file is generated once and reused
 
 ### `GET /api/output/:id/pdf`
 - Requires: job status = `'done'`
 - Returns: PDF as `.pdf` download
-- Content: `cleanedText` if present, otherwise `text`
+- Content: raw whisper `text`
 - Cached: file is generated once and reused
 
 ---
@@ -232,17 +221,21 @@ interface Job {
 ### `page.tsx`
 - Client component
 - State: `jobs: Array<{ jobId, filename }>`
-- Renders `<UploadZone>` and a list of `<JobStatus>` cards
+- Renders `<UploadZone>`, `<PromptPanel>`, and a list of `<JobStatus>` cards
 - Prepends new jobs to top of list on upload
 
 ### `UploadZone.tsx`
 - Client component
 - Props: `onUpload(jobId: string, filename: string) => void`
 - State: `selected` (File), `uploading` (bool), `dragging` (bool), `error` (string)
-- Two buttons:
-  - **Transcribe** (blue) — calls `handleUpload(false)`
-  - **Transcribe & AI Cleanup** (purple) — calls `handleUpload(true)`
+- Single **Transcribe** button (blue)
 - Accepted formats validated client-side by extension
+
+### `PromptPanel` (inline in `page.tsx`)
+- Static component — no props
+- Displays the ChatGPT cleanup prompt from `aiCleanup.js` in a read-only textarea
+- "Copy" button copies the full prompt to clipboard
+- Always visible on the page; not dependent on job state
 
 ### `JobStatus.tsx`
 - Client component
@@ -251,9 +244,8 @@ interface Job {
 - Stops polling when status is `done` or `error`
 - Shows:
   - Status badge (gray/yellow/green/red)
-  - "AI Cleaned" purple badge when `cleanedText` is present
   - Download buttons (TXT / DOCX / PDF) when done
-  - Transcript preview (last 2 lines, cleaned if available)
+  - Transcript preview (2 lines of raw whisper text) when done
 
 ---
 
@@ -266,7 +258,7 @@ File: `backend/.env` (git-ignored, copy from `.env.example`)
 | `PORT` | No | `3001` | Express server port |
 | `WHISPER_BINARY` | No | `whisper-cli` | Path or name of whisper binary |
 | `WHISPER_MODEL` | No | `../whisper/models/ggml-base.en.bin` | Path to GGML model file |
-| `OPENAI_API_KEY` | For AI Cleanup | — | OpenAI secret key (`sk-...`) |
+| `OPENAI_API_KEY` | No (cleanup disabled) | — | OpenAI secret key — needed only if cleanup is re-enabled |
 
 ---
 
@@ -278,10 +270,10 @@ File: `backend/.env` (git-ignored, copy from `.env.example`)
 | In-memory job store (Map) | Simplest possible state; persistence not needed for local tool |
 | ffmpeg converts to 16kHz mono WAV before whisper | whisper.cpp requires exactly this format for best accuracy |
 | Output files are generated lazily on first download | Avoids generating files that are never downloaded |
-| `cleanedText` stored separately from `text` | Preserves original transcript; TXT download always gives raw whisper output |
 | No upload size limit | Local app — user controls their own disk; large lecture recordings (2-3h) can exceed 500MB |
 | Next.js rewrites `/api/*` to backend | Single origin in browser; no CORS issues in production-like setup |
-| AI cleanup is optional and flag-based | Users who don't have/want an API key can still use the full app |
+| AI cleanup code kept but disabled | Preserves the implementation for easy re-enable; avoids API costs during normal use |
+| Cleanup prompt shown in UI as copyable text | User can manually paste transcript + prompt into ChatGPT without touching the code |
 
 ---
 

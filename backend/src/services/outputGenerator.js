@@ -1,8 +1,11 @@
 const fs = require('fs');
 const path = require('path');
 const { Document, Paragraph, TextRun, HeadingLevel, Packer } = require('docx');
-const { PDFDocument, StandardFonts, PageSizes } = require('pdf-lib');
+const fontkit = require('@pdf-lib/fontkit');
+const { PDFDocument, PageSizes } = require('pdf-lib');
 const { PATHS } = require('../utils/storage');
+
+const PDF_FONT_PATH = path.join(__dirname, '../../assets/fonts/NotoSans-Regular.ttf');
 
 function docxPath(jobId) {
   return path.join(PATHS.outputs, `${jobId}.docx`);
@@ -21,7 +24,7 @@ async function generateDocx(job) {
     new Paragraph({ text: '' }),
   ];
 
-  const lines = (job.cleanedText || job.text || '').split('\n').filter(Boolean);
+  const lines = (job.text || '').split('\n').filter(Boolean);
   for (const line of lines) {
     paragraphs.push(new Paragraph({ children: [new TextRun(line.trim())] }));
   }
@@ -38,8 +41,10 @@ async function generatePdf(job) {
   if (fs.existsSync(outPath)) return outPath;
 
   const pdfDoc = await PDFDocument.create();
-  const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
-  const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  pdfDoc.registerFontkit(fontkit);
+
+  const fontBytes = fs.readFileSync(PDF_FONT_PATH);
+  const fontRegular = await pdfDoc.embedFont(fontBytes);
 
   const margin = 50;
   const titleSize = 16;
@@ -58,10 +63,10 @@ async function generatePdf(job) {
     }
   }
 
-  page.drawText(job.originalName, { x: margin, y, size: titleSize, font: fontBold });
+  page.drawText(job.originalName, { x: margin, y, size: titleSize, font: fontRegular });
   y -= titleSize + 20;
 
-  const words = (job.cleanedText || job.text || '').trim().split(/\s+/);
+  const words = (job.text || '').trim().split(/\s+/);
   let line = '';
 
   for (const word of words) {

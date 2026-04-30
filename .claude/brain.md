@@ -2,25 +2,26 @@
 
 ## Amaç
 MacBook Air M1'de tamamen lokal çalışan ders ses kaydı transkripsiyon uygulaması.
-Audio → ffmpeg → whisper.cpp → (opsiyonel: OpenAI cleanup) → .txt / .docx / .pdf
+Audio → ffmpeg → whisper.cpp → .txt / .docx / .pdf
 
 ## Teknolojiler
 - Frontend: Next.js 14, TypeScript, Tailwind CSS — port 3000
 - Backend: Node.js, Express — port 3001
 - Transcription: whisper.cpp binary (`whisper-cli`, homebrew, M1 native)
 - Audio dönüştürme: ffmpeg (homebrew)
-- AI Cleanup: OpenAI gpt-4o-mini (opsiyonel, `.env` ile aktif)
+- AI Cleanup: OpenAI gpt-4o-mini — KOD VAR ama DEVRE DIŞI (jobManager'da yorum satırı)
 - DOCX: docx (npm)
 - PDF: pdf-lib (npm)
 - Storage: local file system
 
 ## Mimari
 ```
-Kullanıcı → Next.js UI → Express API → ffmpeg → whisper-cli → [OpenAI cleanup] → output
+Kullanıcı → Next.js UI → Express API → ffmpeg → whisper-cli → output
 ```
 - whisper.cpp Node içinde çalışmaz; `child_process.spawn` ile binary çağrılır
-- OpenAI sadece AI Cleanup butonuyla tetiklenir, opsiyoneldir
-- Tüm dosyalar `storage/` klasöründe tutulur, cloud'a hiçbir şey gitmez (OpenAI hariç)
+- AI Cleanup devre dışı; kullanıcı transcript'i indirip ChatGPT'ye manuel verir
+- UI'da prompt paneli var; cleanup promptu kopyalanabilir textarea ile gösterilir
+- Tüm dosyalar `storage/` klasöründe tutulur, cloud'a hiçbir şey gitmiyor
 - Job sistemi in-memory Map ile yönetilir (restart'ta sıfırlanır)
 
 ## Klasör Yapısı
@@ -73,8 +74,8 @@ transkriptor/
 - `GET  /api/jobs/:id`         → job objesi
 - `GET  /api/jobs`             → job listesi (yeniden eskiye)
 - `GET  /api/output/:id/txt`   → .txt indir (ham transkript)
-- `GET  /api/output/:id/docx`  → .docx indir (cleanedText varsa o, yoksa text)
-- `GET  /api/output/:id/pdf`   → .pdf indir (cleanedText varsa o, yoksa text)
+- `GET  /api/output/:id/docx`  → .docx indir (ham whisper text)
+- `GET  /api/output/:id/pdf`   → .pdf indir (ham whisper text)
 
 ## Environment Variables
 ```
@@ -104,3 +105,5 @@ cd frontend && npm run dev  # Next.js (port 3000)
 - [x] Sonrası — Upload boyut limiti kaldırıldı
 - [x] Sonrası — UI tamamen İngilizce yapıldı
 - [x] Sonrası — OpenAI AI Cleanup özelliği eklendi
+- [x] Sonrası — AI Cleanup devre dışı bırakıldı (kod korundu, yorum satırı yapıldı)
+- [x] Sonrası — UI'a ChatGPT prompt paneli eklendi (kopyalanabilir textarea)

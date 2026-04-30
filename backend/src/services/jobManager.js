@@ -1,6 +1,6 @@
 const ffmpeg = require('./ffmpeg');
 const whisper = require('./whisper');
-const { cleanup } = require('./aiCleanup');
+// const { cleanup } = require('./aiCleanup');
 
 const jobs = new Map();
 
@@ -50,12 +50,11 @@ async function run(jobId) {
     const { text, txtPath } = await whisper.transcribe(processedPath, jobId);
     update(jobId, { text, transcriptPath: txtPath });
 
-    if (job.aiCleanup) {
-      console.log(`job [${jobId}]: ai cleanup start`);
-      const cleanedText = await cleanup(text);
-      update(jobId, { cleanedText });
-      console.log(`job [${jobId}]: ai cleanup done`);
-    }
+    // AI cleanup disabled — re-enable when needed
+    // if (job.aiCleanup) {
+    //   const cleanedText = await cleanup(text);
+    //   update(jobId, { cleanedText });
+    // }
 
     update(jobId, { status: 'done' });
     console.log(`job [${jobId}]: done`);

@@ -38,14 +38,14 @@ export default function UploadZone({ onUpload }: Props) {
     setSelected(file);
   }
 
-  async function handleUpload(cleanup: boolean) {
+  async function handleUpload() {
     if (!selected || uploading) return;
     setUploading(true);
     setError('');
     try {
       const form = new FormData();
       form.append('audio', selected);
-      form.append('cleanup', String(cleanup));
+      form.append('cleanup', 'false');
       const res = await fetch('/api/upload', { method: 'POST', body: form });
       if (!res.ok) {
         const data = await res.json();
@@ -93,24 +93,15 @@ export default function UploadZone({ onUpload }: Props) {
 
       {error && <p className="text-red-500 text-sm mt-2 text-center">{error}</p>}
 
-      <div className="mt-3 flex gap-2">
+      <div className="mt-3">
         <button
-          onClick={() => handleUpload(false)}
+          onClick={handleUpload}
           disabled={disabled}
-          className="flex-1 py-2.5 rounded-lg text-sm font-medium transition-colors
+          className="w-full py-2.5 rounded-lg text-sm font-medium transition-colors
             bg-blue-600 text-white hover:bg-blue-700
             disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed"
         >
           {uploading ? 'Uploading…' : 'Transcribe'}
-        </button>
-        <button
-          onClick={() => handleUpload(true)}
-          disabled={disabled}
-          className="flex-1 py-2.5 rounded-lg text-sm font-medium transition-colors
-            bg-purple-600 text-white hover:bg-purple-700
-            disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed"
-        >
-          {uploading ? 'Uploading…' : 'Transcribe & AI Cleanup'}
         </button>
       </div>
     </div>
